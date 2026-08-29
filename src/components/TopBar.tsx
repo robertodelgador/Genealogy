@@ -63,7 +63,7 @@ export function TopBar({ onAddPerson, onZoomIn, onZoomOut, onResetView }: Props)
         </div>
         {currentUser && (
           <span className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-xs text-emerald-300">
-            <UserCircle2 size={13} /> {currentUser.name}
+            <UserCircle2 size={13} /> {currentUser.full_name}
           </span>
         )}
       </div>
