@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   html,
   body,
@@ -8,29 +10,33 @@
     margin: 0;
   }
 
-  /* Default Dark Mode */
-  body {
-    background-color: #020617;
-    color: #f1f5f9;
-    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    transition: background-color 0.25s ease, color 0.25s ease;
+  html {
+    color-scheme: dark;
   }
 
-  /* Light Mode Overrides */
+  html.light {
+    color-scheme: light;
+  }
+
+  body {
+    background-color: #020617;
+    color: #f8fafc;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
   html.light body {
-    background-color: #f8fafc;
+    background-color: #f1f5f9;
     color: #0f172a;
   }
 }
 
 @layer components {
-  /* Dark inputs */
   .input {
-    @apply rounded-xl border border-white/10 bg-slate-800/80 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none transition-colors shadow-inner;
+    @apply rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors shadow-sm;
   }
-  /* Light inputs */
-  html.light .input {
-    @apply border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500;
+  .dark .input {
+    @apply border-white/10 bg-slate-800/80 text-slate-100 placeholder:text-slate-500 focus:border-emerald-400 focus:ring-0 shadow-inner;
   }
 
   .btn-primary {
@@ -38,16 +44,16 @@
   }
 
   .btn-secondary {
-    @apply flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-white/10 active:scale-[0.98] transition-all cursor-pointer;
+    @apply flex items-center gap-1.5 rounded-xl border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-200 hover:text-slate-900 active:scale-[0.98] transition-all cursor-pointer;
   }
-  html.light .btn-secondary {
-    @apply border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900;
+  .dark .btn-secondary {
+    @apply border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white;
   }
 
   .icon-btn {
-    @apply flex h-9 w-9 items-center justify-center rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-all cursor-pointer;
+    @apply flex h-9 w-9 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-all cursor-pointer;
   }
-  html.light .icon-btn {
-    @apply text-slate-600 hover:bg-slate-200 hover:text-slate-900;
+  .dark .icon-btn {
+    @apply text-slate-300 hover:bg-white/10 hover:text-white;
   }
 }
