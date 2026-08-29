@@ -44,9 +44,9 @@ export const TreeView = forwardRef<TreeViewHandle, Props>(({ onEditPerson }, ref
   const panState = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const draggedRef = useRef(false);
 
-  const focusTargetId = selectedId || rootId || 'roberto-delgado-ruegg';
+  const focusTargetId = selectedId || rootId || 'I500002';
 
-  // Compute layout with collision avoidance
+  // Compute layout with collision avoidance and contiguous sibling clusters
   const layout = useMemo(
     () => computeLayout(people, focusTargetId, viewMode === 'lineage'),
     [people, focusTargetId, viewMode]
@@ -149,7 +149,7 @@ export const TreeView = forwardRef<TreeViewHandle, Props>(({ onEditPerson }, ref
   const svgOffsetX = -bounds.minX + 400;
   const svgOffsetY = -bounds.minY + 200;
 
-  const lineColor = theme === 'dark' ? '#475569' : '#94a3b8';
+  const lineColor = theme === 'dark' ? '#64748b' : '#94a3b8';
   const spouseLineColor = theme === 'dark' ? '#f472b6' : '#ec4899';
   const dotColor = theme === 'dark' ? 'rgba(148,163,184,0.12)' : 'rgba(100,116,139,0.12)';
 
@@ -185,7 +185,7 @@ export const TreeView = forwardRef<TreeViewHandle, Props>(({ onEditPerson }, ref
               ? 'bg-emerald-500 text-slate-950 shadow-sm'
               : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5'
           }`}
-          title="Ver todos los 106 familiares"
+          title="Ver todos los familiares"
         >
           <Network size={14} /> Árbol Completo
         </button>
@@ -260,7 +260,7 @@ export const TreeView = forwardRef<TreeViewHandle, Props>(({ onEditPerson }, ref
               />
             ))}
 
-            {/* Parent-Child Tree Connectors (Strictly isolated per family) */}
+            {/* Parent-Child Tree Connectors (Strictly isolated per family unit) */}
             {positioned.familyLinks.map((fl) => {
               const busLeft = Math.min(fl.parentX, fl.minChildX);
               const busRight = Math.max(fl.parentX, fl.maxChildX);
