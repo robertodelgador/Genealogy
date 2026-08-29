@@ -7,24 +7,47 @@
     height: 100%;
     margin: 0;
   }
+
+  /* Default Dark Mode */
   body {
     background-color: #020617;
-    color: #e2e8f0;
-    font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+    color: #f1f5f9;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  /* Light Mode Overrides */
+  html.light body {
+    background-color: #f8fafc;
+    color: #0f172a;
   }
 }
 
 @layer components {
+  /* Dark inputs */
   .input {
-    @apply rounded-lg border border-white/10 bg-slate-800/70 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-indigo-400 focus:outline-none;
+    @apply rounded-xl border border-white/10 bg-slate-800/80 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none transition-colors shadow-inner;
   }
+  /* Light inputs */
+  html.light .input {
+    @apply border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500;
+  }
+
   .btn-primary {
-    @apply flex items-center gap-1.5 rounded-lg bg-indigo-500 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-400 transition-colors;
+    @apply flex items-center gap-1.5 rounded-xl bg-emerald-500 px-3.5 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-md shadow-emerald-500/20 cursor-pointer;
   }
+
   .btn-secondary {
-    @apply flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-slate-200 hover:bg-white/10 transition-colors;
+    @apply flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-white/10 active:scale-[0.98] transition-all cursor-pointer;
   }
+  html.light .btn-secondary {
+    @apply border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900;
+  }
+
   .icon-btn {
-    @apply flex h-8 w-8 items-center justify-center rounded-lg text-slate-300 hover:bg-white/10 hover:text-white transition-colors;
+    @apply flex h-9 w-9 items-center justify-center rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-all cursor-pointer;
+  }
+  html.light .icon-btn {
+    @apply text-slate-600 hover:bg-slate-200 hover:text-slate-900;
   }
 }

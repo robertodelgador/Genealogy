@@ -9,6 +9,7 @@ import {
   type PointerEvent,
 } from 'react';
 import { useTreeStore } from '../store/useTreeStore';
+import { useThemeStore } from '../store/useThemeStore';
 import { computeLayout } from '../utils/layout';
 import { computePositions, CARD_H } from '../utils/positions';
 import { PersonCard } from './PersonCard';
@@ -32,6 +33,7 @@ export const TreeView = forwardRef<TreeViewHandle, Props>(({ onEditPerson }, ref
   const rootId = useTreeStore((s) => s.rootId);
   const selectedId = useTreeStore((s) => s.selectedId);
   const setSelected = useTreeStore((s) => s.setSelected);
+  const theme = useThemeStore((s) => s.theme);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState({ x: 80, y: 60, scale: 1 });
@@ -112,10 +114,14 @@ export const TreeView = forwardRef<TreeViewHandle, Props>(({ onEditPerson }, ref
   const svgOffsetX = -bounds.minX + 200;
   const svgOffsetY = -bounds.minY + 100;
 
+  const lineColor = theme === 'dark' ? '#64748b' : '#94a3b8';
+  const spouseLineColor = theme === 'dark' ? '#f472b6' : '#ec4899';
+  const dotColor = theme === 'dark' ? 'rgba(148,163,184,0.15)' : 'rgba(100,116,139,0.12)';
+
   if (!rootId || Object.keys(people).length === 0) {
     return (
       <div className="flex h-full items-center justify-center text-slate-400 text-sm">
-        No one in the tree yet. Add a person to get started.
+        Cargando árbol familiar desde PostgreSQL...
       </div>
     );
   }
@@ -123,10 +129,9 @@ export const TreeView = forwardRef<TreeViewHandle, Props>(({ onEditPerson }, ref
   return (
     <div
       ref={containerRef}
-      className="relative h-full w-full overflow-hidden bg-slate-950 touch-none"
+      className="relative h-full w-full overflow-hidden bg-slate-100 dark:bg-slate-950 touch-none transition-colors"
       style={{
-        backgroundImage:
-          'radial-gradient(circle, rgba(148,163,184,0.15) 1px, transparent 1px)',
+        backgroundImage: `radial-gradient(circle, ${dotColor} 1.5px, transparent 1.5px)`,
         backgroundSize: '24px 24px',
         backgroundPosition: `${transform.x % 24}px ${transform.y % 24}px`,
       }}
@@ -157,8 +162,9 @@ export const TreeView = forwardRef<TreeViewHandle, Props>(({ onEditPerson }, ref
                 y1={link.y}
                 x2={link.x2}
                 y2={link.y}
-                stroke="#f472b6"
+                stroke={spouseLineColor}
                 strokeWidth={2}
+                strokeDasharray="4 3"
               />
             ))}
             {positioned.familyLinks.map((fl) => (
@@ -168,7 +174,7 @@ export const TreeView = forwardRef<TreeViewHandle, Props>(({ onEditPerson }, ref
                   y1={fl.parentY + CARD_H / 2}
                   x2={fl.parentX}
                   y2={fl.busY}
-                  stroke="#64748b"
+                  stroke={lineColor}
                   strokeWidth={2}
                 />
                 {fl.children.length > 1 && (
@@ -177,7 +183,7 @@ export const TreeView = forwardRef<TreeViewHandle, Props>(({ onEditPerson }, ref
                     y1={fl.busY}
                     x2={Math.max(...fl.children.map((c) => c.x))}
                     y2={fl.busY}
-                    stroke="#64748b"
+                    stroke={lineColor}
                     strokeWidth={2}
                   />
                 )}
@@ -188,7 +194,7 @@ export const TreeView = forwardRef<TreeViewHandle, Props>(({ onEditPerson }, ref
                     y1={fl.busY}
                     x2={c.x}
                     y2={c.y - CARD_H / 2}
-                    stroke="#64748b"
+                    stroke={lineColor}
                     strokeWidth={2}
                   />
                 ))}

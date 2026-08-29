@@ -1,7 +1,7 @@
 <?php
 /**
  * Collaborative Genealogy REST API Backend
- * Supports: PostgreSQL, Email/Password Auth, Google OAuth, CRUD, and Audit Trail Change Tracking
+ * Supports: PostgreSQL, Email/Password Auth, Google OAuth, Detailed Field-by-Field Diff Tracking
  */
 
 header('Content-Type: application/json');
@@ -201,7 +201,7 @@ try {
             echo json_encode(['success' => true]);
             break;
 
-        // 6. GET TREE
+        // 6. GET TREE (With Roberto Delgado Rüegg as default root)
         case 'get-tree':
             requireAuth();
             $stmt = $db->query("SELECT * FROM people ORDER BY created_at ASC");
@@ -227,11 +227,11 @@ try {
                 ];
             }
 
-            $rootId = !empty($people) ? array_keys($people)[0] : null;
+            $rootId = isset($people['roberto-delgado-ruegg']) ? 'roberto-delgado-ruegg' : (!empty($people) ? array_keys($people)[0] : null);
             echo json_encode(['people' => $people, 'rootId' => $rootId]);
             break;
 
-        // 7. SAVE PERSON (With Audit Log)
+        // 7. SAVE PERSON (With Granular Field-by-Field Diff Tracking)
         case 'save-person':
             $currentUser = requireAuth();
             $person = isset($data['person']) ? $data['person'] : null;
@@ -261,7 +261,73 @@ try {
             $stmt->execute([$id]);
             $existing = $stmt->fetch();
 
+            $fullName = "{$firstName} {$lastName}";
+
             if ($existing) {
+                // Compute Granular Field-by-Field Diffs
+                $diffs = [];
+                $fields = [
+                    'first_name'   => 'Nombre',
+                    'last_name'    => 'Apellidos',
+                    'maiden_name'  => 'Apellido de soltera',
+                    'gender'       => 'Género',
+                    'birth_date'   => 'Fecha de nacimiento',
+                    'birth_place'  => 'Lugar de nacimiento',
+                    'death_date'   => 'Fecha de defunción',
+                    'death_place'  => 'Lugar de defunción',
+                    'photo_url'    => 'Foto',
+                    'notes'        => 'Notas biográficas',
+                ];
+
+                foreach ($fields as $col => $label) {
+                    $oldVal = isset($existing[$col]) ? $existing[$col] : null;
+                    // match column to camelCase property
+                    $camelMap = [
+                        'first_name'   => 'firstName',
+                        'last_name'    => 'lastName',
+                        'maiden_name'  => 'maidenName',
+                        'gender'       => 'gender',
+                        'birth_date'   => 'birthDate',
+                        'birth_place'  => 'birthPlace',
+                        'death_date'   => 'deathDate',
+                        'death_place'  => 'deathPlace',
+                        'photo_url'    => 'photoUrl',
+                        'notes'        => 'notes',
+                    ];
+                    $prop = $camelMap[$col];
+                    $newVal = isset($person[$prop]) ? $person[$prop] : null;
+
+                    // Normalize empty strings to null
+                    $oldVal = ($oldVal === '' || $oldVal === null) ? null : (string)$oldVal;
+                    $newVal = ($newVal === '' || $newVal === null) ? null : (string)$newVal;
+
+                    if ($oldVal !== $newVal) {
+                        $diffs[] = [
+                            'field' => $label,
+                            'old'   => $oldVal,
+                            'new'   => $newVal,
+                        ];
+                    }
+                }
+
+                // Check relation changes
+                $oldParents = json_decode($existing['parent_ids'] ?: '[]', true) ?: [];
+                $newParents = isset($person['parentIds']) ? $person['parentIds'] : [];
+                if ($oldParents != $newParents) {
+                    $diffs[] = ['field' => 'Vínculos de Padres', 'old' => implode(', ', $oldParents), 'new' => implode(', ', $newParents)];
+                }
+                $oldSpouses = json_decode($existing['spouse_ids'] ?: '[]', true) ?: [];
+                $newSpouses = isset($person['spouseIds']) ? $person['spouseIds'] : [];
+                if ($oldSpouses != $newSpouses) {
+                    $diffs[] = ['field' => 'Vínculos de Cónyuges', 'old' => implode(', ', $oldSpouses), 'new' => implode(', ', $newSpouses)];
+                }
+                $oldChildren = json_decode($existing['child_ids'] ?: '[]', true) ?: [];
+                $newChildren = isset($person['childIds']) ? $person['childIds'] : [];
+                if ($oldChildren != $newChildren) {
+                    $diffs[] = ['field' => 'Vínculos de Hijos', 'old' => implode(', ', $oldChildren), 'new' => implode(', ', $newChildren)];
+                }
+
+                // Update Person Record
                 $update = $db->prepare("
                     UPDATE people SET
                         first_name = ?, last_name = ?, maiden_name = ?, gender = ?,
@@ -277,17 +343,28 @@ try {
                     $currentUser['id'], $id
                 ]);
 
-                $fullName = "{$firstName} {$lastName}";
-                $audit = $db->prepare("
-                    INSERT INTO change_logs (person_id, person_name, user_id, user_email, user_name, action, changes_summary, old_data, new_data)
-                    VALUES (?, ?, ?, ?, ?, 'UPDATE', ?, ?, ?)
-                ");
-                $audit->execute([
-                    $id, $fullName, $currentUser['id'], $currentUser['email'], $currentUser['full_name'],
-                    "Actualizó los datos de {$fullName}", json_encode($existing), json_encode($person)
-                ]);
+                // Create Summary String
+                if (!empty($diffs)) {
+                    $summaryParts = [];
+                    foreach ($diffs as $d) {
+                        $oldStr = $d['old'] !== null ? "'{$d['old']}'" : "(vacío)";
+                        $newStr = $d['new'] !== null ? "'{$d['new']}'" : "(eliminado)";
+                        $summaryParts[] = "{$d['field']}: {$oldStr} ➔ {$newStr}";
+                    }
+                    $summary = implode(" | ", $summaryParts);
+
+                    $audit = $db->prepare("
+                        INSERT INTO change_logs (person_id, person_name, user_id, user_email, user_name, action, changes_summary, old_data, new_data)
+                        VALUES (?, ?, ?, ?, ?, 'UPDATE', ?, ?, ?)
+                    ");
+                    $audit->execute([
+                        $id, $fullName, $currentUser['id'], $currentUser['email'], $currentUser['full_name'],
+                        $summary, json_encode($diffs), json_encode($person)
+                    ]);
+                }
 
             } else {
+                // INSERT NEW PERSON
                 $insert = $db->prepare("
                     INSERT INTO people (
                         id, first_name, last_name, maiden_name, gender,
@@ -303,14 +380,14 @@ try {
                     $currentUser['id'], $currentUser['id']
                 ]);
 
-                $fullName = "{$firstName} {$lastName}";
+                $summary = "Creación de registro familiar: {$fullName}";
                 $audit = $db->prepare("
                     INSERT INTO change_logs (person_id, person_name, user_id, user_email, user_name, action, changes_summary, old_data, new_data)
                     VALUES (?, ?, ?, ?, ?, 'CREATE', ?, NULL, ?)
                 ");
                 $audit->execute([
                     $id, $fullName, $currentUser['id'], $currentUser['email'], $currentUser['full_name'],
-                    "Agregó a {$fullName} al árbol familiar", json_encode($person)
+                    $summary, json_encode($person)
                 ]);
             }
 
@@ -342,7 +419,7 @@ try {
                 ");
                 $audit->execute([
                     $id, $fullName, $currentUser['id'], $currentUser['email'], $currentUser['full_name'],
-                    "Eliminó a {$fullName} del árbol", json_encode($existing)
+                    "Eliminó el registro de {$fullName} del árbol", json_encode($existing)
                 ]);
             }
 
