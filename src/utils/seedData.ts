@@ -1527,7 +1527,7 @@ export const seedData: FamilyTreeData = {
       "carmen-garcia-rendueles"
     ],
     "childIds": [
-      "roberto-delgado-padre",
+      "rodrigo-delgado-garcia",
       "fernando-delgado-garcia"
     ]
   },
@@ -1542,7 +1542,7 @@ export const seedData: FamilyTreeData = {
       "roberto-stelio-delgado"
     ],
     "childIds": [
-      "roberto-delgado-padre",
+      "rodrigo-delgado-garcia",
       "fernando-delgado-garcia"
     ]
   },
@@ -1560,8 +1560,8 @@ export const seedData: FamilyTreeData = {
     "spouseIds": [],
     "childIds": []
   },
-  "roberto-delgado-padre": {
-    "id": "roberto-delgado-padre",
+  "rodrigo-delgado-garcia": {
+    "id": "rodrigo-delgado-garcia",
     "firstName": "Roberto",
     "lastName": "Delgado García-Rendueles",
     "gender": "male",
@@ -1573,7 +1573,7 @@ export const seedData: FamilyTreeData = {
       "carmen-garcia-rendueles"
     ],
     "spouseIds": [
-      "senora-ruegg"
+      "heidi-ruegg"
     ],
     "childIds": [
       "roberto-delgado-ruegg",
@@ -1581,8 +1581,8 @@ export const seedData: FamilyTreeData = {
       "diego-delgado-ruegg"
     ]
   },
-  "senora-ruegg": {
-    "id": "senora-ruegg",
+  "heidi-ruegg": {
+    "id": "heidi-ruegg",
     "firstName": "Sra.",
     "lastName": "Rüegg",
     "gender": "female",
@@ -1590,7 +1590,7 @@ export const seedData: FamilyTreeData = {
     "notes": "Madre de Roberto Delgado Rüegg.",
     "parentIds": [],
     "spouseIds": [
-      "roberto-delgado-padre"
+      "rodrigo-delgado-garcia"
     ],
     "childIds": [
       "roberto-delgado-ruegg",
@@ -1607,8 +1607,8 @@ export const seedData: FamilyTreeData = {
     "birthPlace": "Ciudad de Guatemala",
     "notes": "Centro del Árbol Genealógico Familiar.",
     "parentIds": [
-      "roberto-delgado-padre",
-      "senora-ruegg"
+      "rodrigo-delgado-garcia",
+      "heidi-ruegg"
     ],
     "spouseIds": [],
     "childIds": []
@@ -1622,8 +1622,8 @@ export const seedData: FamilyTreeData = {
     "birthPlace": "Ciudad de Guatemala",
     "notes": "Hermano de Roberto Delgado Rüegg.",
     "parentIds": [
-      "roberto-delgado-padre",
-      "senora-ruegg"
+      "rodrigo-delgado-garcia",
+      "heidi-ruegg"
     ],
     "spouseIds": [],
     "childIds": []
@@ -1637,8 +1637,8 @@ export const seedData: FamilyTreeData = {
     "birthPlace": "Ciudad de Guatemala",
     "notes": "Hermano de Roberto Delgado Rüegg.",
     "parentIds": [
-      "roberto-delgado-padre",
-      "senora-ruegg"
+      "rodrigo-delgado-garcia",
+      "heidi-ruegg"
     ],
     "spouseIds": [],
     "childIds": []
