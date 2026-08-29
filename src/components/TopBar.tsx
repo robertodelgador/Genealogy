@@ -112,7 +112,19 @@ export function TopBar({ onAddPerson, onZoomIn, onZoomOut, onResetView, onFocusP
   }
 
   function centerOnRoberto() {
-    const targetId = 'roberto-delgado-ruegg';
+    let targetId = 'I500002';
+    if (!people[targetId]) {
+      targetId = 'roberto-delgado-ruegg';
+    }
+    if (!people[targetId]) {
+      for (const [id, p] of Object.entries(people)) {
+        const fn = `${p.firstName} ${p.lastName}`.toLowerCase();
+        if (fn.includes('roberto') && fn.includes('delgado') && fn.includes('r')) {
+          targetId = id;
+          break;
+        }
+      }
+    }
     if (people[targetId]) {
       setRoot(targetId);
       setSelected(targetId);

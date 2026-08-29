@@ -19,7 +19,8 @@ export interface LayoutResult {
 export const CARD_WIDTH = 200;
 export const CARD_HEIGHT = 88;
 export const COUPLE_SPACING = 20;
-export const UNIT_GAP = 48;
+export const SIBLING_GAP = 28;
+export const FAMILY_GAP = 64;
 export const GENERATION_HEIGHT = 180;
 
 function byBirthDate(people: Record<string, Person>) {
@@ -43,11 +44,10 @@ export function assignGenerations(
   gen[focusId] = 0;
   const queue: string[] = [focusId];
 
-  // If filtering to direct ancestry and contiguous relations
   if (filterDirectOnly) {
     const allowed = new Set<string>([focusId]);
 
-    // Add ancestors (parents, grandparents...)
+    // Ancestors (parents, grandparents...)
     const addAncestors = (id: string, currentGen: number) => {
       const p = people[id];
       if (!p) return;
@@ -61,7 +61,7 @@ export function assignGenerations(
     };
     addAncestors(focusId, 0);
 
-    // Add spouses
+    // Spouses
     for (const sid of people[focusId]?.spouseIds ?? []) {
       if (people[sid]) {
         allowed.add(sid);
@@ -69,7 +69,7 @@ export function assignGenerations(
       }
     }
 
-    // Add siblings (sharing same parents)
+    // Siblings (share at least one parent)
     for (const pid of people[focusId]?.parentIds ?? []) {
       for (const cid of people[pid]?.childIds ?? []) {
         if (people[cid]) {
@@ -79,7 +79,7 @@ export function assignGenerations(
       }
     }
 
-    // Add descendants (children, grandchildren...)
+    // Descendants
     const addDescendants = (id: string, currentGen: number) => {
       const p = people[id];
       if (!p) return;
@@ -96,28 +96,28 @@ export function assignGenerations(
     return gen;
   }
 
-  // Full tree BFS
+  // Full tree BFS traversal
   while (queue.length) {
     const id = queue.shift()!;
     const person = people[id];
     if (!person) continue;
     const g = gen[id];
 
-    // Spouses at same generation
+    // Spouses same gen
     for (const sid of person.spouseIds) {
       if (!(sid in gen) && people[sid]) {
         gen[sid] = g;
         queue.push(sid);
       }
     }
-    // Children at gen + 1
+    // Children gen + 1
     for (const cid of person.childIds) {
       if (!(cid in gen) && people[cid]) {
         gen[cid] = g + 1;
         queue.push(cid);
       }
     }
-    // Parents at gen - 1
+    // Parents gen - 1
     for (const pid of person.parentIds) {
       if (!(pid in gen) && people[pid]) {
         gen[pid] = g - 1;
@@ -192,7 +192,7 @@ export function computeLayout(
   const placed = new Set<string>();
   const genUnitsMap = new Map<number, string[][]>();
 
-  // Pass 1: Build units per generation ordered by parental links
+  // Pass 1: Build units grouped strictly by parental family clusters
   for (const g of genLevels) {
     const idsInGen = (byGen.get(g) ?? []).sort(byBirthDate(people));
     if (g === minGen) {
@@ -206,6 +206,7 @@ export function computeLayout(
     const orderedChildren: string[] = [];
     const seenChild = new Set<string>();
 
+    // For each parent unit in previous generation, gather ALL its children together contiguously
     for (const unit of prevUnits) {
       const childIds = new Set<string>();
       for (const memberId of unit) {
@@ -222,6 +223,7 @@ export function computeLayout(
       }
     }
 
+    // Remaining in this generation (married-in or roots)
     for (const id of idsInGen) {
       if (!seenChild.has(id)) {
         seenChild.add(id);
@@ -261,7 +263,7 @@ export function computeLayout(
     unitsByGen.get(u.gen)!.push(u);
   }
 
-  // Pass 2: Initial non-overlapping horizontal placement from left to right
+  // Pass 2: Left-to-right spacing
   for (const g of genLevels) {
     const arr = unitsByGen.get(g) ?? [];
     for (let i = 0; i < arr.length; i++) {
@@ -270,12 +272,12 @@ export function computeLayout(
         u.x = u.width / 2;
       } else {
         const prev = arr[i - 1];
-        u.x = prev.x + prev.width / 2 + UNIT_GAP + u.width / 2;
+        u.x = prev.x + prev.width / 2 + SIBLING_GAP + u.width / 2;
       }
     }
   }
 
-  // Pass 3: Bottom-up centering alignment (Parents centered above children)
+  // Helper: Find child units of a parent unit
   const childUnitsOf = (unit: LayoutUnit): LayoutUnit[] => {
     const childIds = new Set<string>();
     for (const m of unit.memberIds) {
@@ -294,6 +296,7 @@ export function computeLayout(
     return [...res];
   };
 
+  // Pass 3: Bottom-up centering alignment (Parents centered above their children)
   for (let g = maxGen - 1; g >= minGen; g--) {
     const arr = unitsByGen.get(g);
     if (!arr) continue;
@@ -312,31 +315,30 @@ export function computeLayout(
     for (let i = 1; i < arr.length; i++) {
       const prev = arr[i - 1];
       const curr = arr[i];
-      const minAllowed = prev.x + prev.width / 2 + UNIT_GAP + curr.width / 2;
+      const minAllowed = prev.x + prev.width / 2 + FAMILY_GAP + curr.width / 2;
       if (curr.x < minAllowed) {
         curr.x = minAllowed;
       }
     }
   }
 
-  // Pass 4: Top-down relaxation (children aligned under parents without overlap)
+  // Pass 4: Top-down alignment (Children centered under parents while maintaining contiguous clusters)
   for (let g = minGen + 1; g <= maxGen; g++) {
     const arr = unitsByGen.get(g);
     if (!arr) continue;
 
-    // Check overlaps
     arr.sort((a, b) => a.x - b.x);
     for (let i = 1; i < arr.length; i++) {
       const prev = arr[i - 1];
       const curr = arr[i];
-      const minAllowed = prev.x + prev.width / 2 + UNIT_GAP + curr.width / 2;
+      const minAllowed = prev.x + prev.width / 2 + SIBLING_GAP + curr.width / 2;
       if (curr.x < minAllowed) {
         curr.x = minAllowed;
       }
     }
   }
 
-  // Center entire tree horizontally at x = 0
+  // Center whole tree at X = 0
   let totalMinX = Infinity;
   let totalMaxX = -Infinity;
   for (const u of units) {

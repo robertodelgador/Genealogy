@@ -227,7 +227,23 @@ try {
                 ];
             }
 
-            $rootId = isset($people['roberto-delgado-ruegg']) ? 'roberto-delgado-ruegg' : (!empty($people) ? array_keys($people)[0] : null);
+            $rootId = null;
+            if (isset($people['I500002'])) {
+                $rootId = 'I500002';
+            } elseif (isset($people['roberto-delgado-ruegg'])) {
+                $rootId = 'roberto-delgado-ruegg';
+            } else {
+                foreach ($people as $pId => $p) {
+                    $fn = strtolower($p['firstName'] . ' ' . $p['lastName']);
+                    if (strpos($fn, 'roberto') !== false && strpos($fn, 'delgado') !== false && strpos($fn, 'r') !== false) {
+                        $rootId = $pId;
+                        break;
+                    }
+                }
+                if (!$rootId && !empty($people)) {
+                    $rootId = array_keys($people)[0];
+                }
+            }
             echo json_encode(['people' => $people, 'rootId' => $rootId]);
             break;
 

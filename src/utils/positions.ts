@@ -31,6 +31,8 @@ export interface FamilyLink {
   parentY: number;
   children: { id: string; x: number; y: number }[];
   busY: number;
+  minChildX: number;
+  maxChildX: number;
 }
 
 export interface ComputedPositions {
@@ -80,9 +82,13 @@ export function computePositions(layout: LayoutResult, people: Record<string, Pe
     const children = [...childIds]
       .map((cid) => positions[cid])
       .filter(Boolean)
-      .map((p) => ({ id: p.id, x: p.x, y: p.y }));
+      .map((p) => ({ id: p.id, x: p.x, y: p.y }))
+      .sort((a, b) => a.x - b.x);
 
     if (children.length === 0) continue;
+
+    const minChildX = children[0].x;
+    const maxChildX = children[children.length - 1].x;
 
     familyLinks.push({
       unitId: unit.id,
@@ -90,6 +96,8 @@ export function computePositions(layout: LayoutResult, people: Record<string, Pe
       parentY: parentY + CARD_HEIGHT / 2,
       children,
       busY: parentY + GENERATION_HEIGHT / 2,
+      minChildX,
+      maxChildX,
     });
   }
 

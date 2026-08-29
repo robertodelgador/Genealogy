@@ -260,43 +260,45 @@ export const TreeView = forwardRef<TreeViewHandle, Props>(({ onEditPerson }, ref
               />
             ))}
 
-            {/* Parent-Child Tree Connectors */}
-            {positioned.familyLinks.map((fl) => (
-              <g key={fl.unitId}>
-                {/* Stem from parents down to horizontal bus bar */}
-                <line
-                  x1={fl.parentX}
-                  y1={fl.parentY}
-                  x2={fl.parentX}
-                  y2={fl.busY}
-                  stroke={lineColor}
-                  strokeWidth={2}
-                />
-                {/* Horizontal bus bar connecting sibling children */}
-                {fl.children.length > 1 && (
+            {/* Parent-Child Tree Connectors (Strictly isolated per family) */}
+            {positioned.familyLinks.map((fl) => {
+              const busLeft = Math.min(fl.parentX, fl.minChildX);
+              const busRight = Math.max(fl.parentX, fl.maxChildX);
+              return (
+                <g key={fl.unitId}>
+                  {/* Stem from parents down to horizontal bus bar */}
                   <line
-                    x1={Math.min(...fl.children.map((c) => c.x))}
-                    y1={fl.busY}
-                    x2={Math.max(...fl.children.map((c) => c.x))}
+                    x1={fl.parentX}
+                    y1={fl.parentY}
+                    x2={fl.parentX}
                     y2={fl.busY}
                     stroke={lineColor}
                     strokeWidth={2}
                   />
-                )}
-                {/* Drop lines from horizontal bus bar into each child card */}
-                {fl.children.map((c) => (
+                  {/* Horizontal bus bar connecting strictly this family's children */}
                   <line
-                    key={`child-${c.id}`}
-                    x1={c.x}
+                    x1={busLeft}
                     y1={fl.busY}
-                    x2={c.x}
-                    y2={c.y - CARD_H / 2}
+                    x2={busRight}
+                    y2={fl.busY}
                     stroke={lineColor}
                     strokeWidth={2}
                   />
-                ))}
-              </g>
-            ))}
+                  {/* Drop lines from horizontal bus bar into each child card */}
+                  {fl.children.map((c) => (
+                    <line
+                      key={`child-${c.id}`}
+                      x1={c.x}
+                      y1={fl.busY}
+                      x2={c.x}
+                      y2={c.y - CARD_H / 2}
+                      stroke={lineColor}
+                      strokeWidth={2}
+                    />
+                  ))}
+                </g>
+              );
+            })}
           </g>
         </svg>
 
