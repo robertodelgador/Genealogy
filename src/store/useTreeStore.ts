@@ -271,9 +271,17 @@ export const useTreeStore = create<TreeState>()(
 
       setSelected: (id) => set({ selectedId: id }),
       setRoot: (id) => set({ rootId: id }),
-      importData: (data) => {
+      importData: async (data) => {
         set({ people: data.people, rootId: data.rootId, selectedId: data.rootId });
-        Object.values(data.people).forEach(syncPersonToBackend);
+        try {
+          await fetch('api.php?action=save-batch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ people: Object.values(data.people) }),
+          });
+        } catch (e) {
+          console.error('Error batch syncing imported tree to PostgreSQL:', e);
+        }
       },
       resetToSeed: () => set({ people: seedData.people, rootId: seedData.rootId, selectedId: seedData.rootId }),
       clearAll: () => {

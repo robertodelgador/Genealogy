@@ -394,6 +394,86 @@ try {
             echo json_encode(['success' => true, 'id' => $id]);
             break;
 
+        // 7.5. SAVE BATCH / IMPORT GEDCOM OR JSON TREE
+        case 'save-batch':
+            $currentUser = requireAuth();
+            $peopleList = isset($data['people']) ? $data['people'] : [];
+
+            if (empty($peopleList) || !is_array($peopleList)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Lista de personas requerida.']);
+                exit;
+            }
+
+            $db->beginTransaction();
+            $count = 0;
+
+            $stmtUpsert = $db->prepare("
+                INSERT INTO people (
+                    id, first_name, last_name, maiden_name, gender,
+                    birth_date, birth_place, death_date, death_place,
+                    photo_url, notes, parent_ids, spouse_ids, child_ids,
+                    created_by, updated_by, updated_at
+                ) VALUES (
+                    :id, :first_name, :last_name, :maiden_name, :gender,
+                    :birth_date, :birth_place, :death_date, :death_place,
+                    :photo_url, :notes, :parent_ids, :spouse_ids, :child_ids,
+                    :user_id, :user_id, CURRENT_TIMESTAMP
+                )
+                ON CONFLICT (id) DO UPDATE SET
+                    first_name = EXCLUDED.first_name,
+                    last_name = EXCLUDED.last_name,
+                    maiden_name = EXCLUDED.maiden_name,
+                    gender = EXCLUDED.gender,
+                    birth_date = EXCLUDED.birth_date,
+                    birth_place = EXCLUDED.birth_place,
+                    death_date = EXCLUDED.death_date,
+                    death_place = EXCLUDED.death_place,
+                    photo_url = COALESCE(EXCLUDED.photo_url, people.photo_url),
+                    notes = EXCLUDED.notes,
+                    parent_ids = EXCLUDED.parent_ids,
+                    spouse_ids = EXCLUDED.spouse_ids,
+                    child_ids = EXCLUDED.child_ids,
+                    updated_by = EXCLUDED.updated_by,
+                    updated_at = CURRENT_TIMESTAMP
+            ");
+
+            foreach ($peopleList as $p) {
+                if (empty($p['id'])) continue;
+                $stmtUpsert->execute([
+                    ':id' => $p['id'],
+                    ':first_name' => isset($p['firstName']) ? trim($p['firstName']) : 'Desconocido',
+                    ':last_name' => isset($p['lastName']) ? trim($p['lastName']) : '',
+                    ':maiden_name' => isset($p['maidenName']) ? $p['maidenName'] : null,
+                    ':gender' => isset($p['gender']) ? $p['gender'] : 'unknown',
+                    ':birth_date' => isset($p['birthDate']) ? $p['birthDate'] : null,
+                    ':birth_place' => isset($p['birthPlace']) ? $p['birthPlace'] : null,
+                    ':death_date' => isset($p['deathDate']) ? $p['deathDate'] : null,
+                    ':death_place' => isset($p['deathPlace']) ? $p['deathPlace'] : null,
+                    ':photo_url' => isset($p['photoUrl']) ? $p['photoUrl'] : null,
+                    ':notes' => isset($p['notes']) ? $p['notes'] : null,
+                    ':parent_ids' => json_encode(isset($p['parentIds']) ? $p['parentIds'] : []),
+                    ':spouse_ids' => json_encode(isset($p['spouseIds']) ? $p['spouseIds'] : []),
+                    ':child_ids' => json_encode(isset($p['childIds']) ? $p['childIds'] : []),
+                    ':user_id' => $currentUser['id'],
+                ]);
+                $count++;
+            }
+
+            // Log import event
+            $audit = $db->prepare("
+                INSERT INTO change_logs (person_id, person_name, user_id, user_email, user_name, action, changes_summary)
+                VALUES ('import-batch', 'Importación Masiva', ?, ?, ?, 'IMPORT', ?)
+            ");
+            $audit->execute([
+                $currentUser['id'], $currentUser['email'], $currentUser['full_name'],
+                "Importación de {$count} registros familiares vía GEDCOM / JSON"
+            ]);
+
+            $db->commit();
+            echo json_encode(['success' => true, 'count' => $count]);
+            break;
+
         // 8. DELETE PERSON
         case 'delete-person':
             $currentUser = requireAuth();
