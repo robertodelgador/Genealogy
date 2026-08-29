@@ -1,0 +1,6 @@
+﻿---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/indeyvxx/public_html/genealogy/
+    - /bin/mkdir -p $DEPLOYPATH
+    - /bin/rsync -av --delete ./dist/ $DEPLOYPATH
