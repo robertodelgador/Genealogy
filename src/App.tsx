@@ -1,18 +1,25 @@
-import { useRef, useState } from 'react';
+﻿import { useRef, useState } from 'react';
 import { TopBar } from './components/TopBar';
 import { PeopleSearch } from './components/PeopleSearch';
 import { Inspector } from './components/Inspector';
 import { TreeView, type TreeViewHandle } from './components/TreeView';
 import { PersonModal, type RelationContext } from './components/PersonModal';
+import { LoginScreen } from './components/LoginScreen';
+import { useAuthStore } from './store/useAuthStore';
 
 type ModalState = { mode: 'edit'; id: string } | { mode: 'create'; relation?: RelationContext } | null;
 
 function App() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const treeRef = useRef<TreeViewHandle>(null);
   const [modal, setModal] = useState<ModalState>(null);
 
+  if (!isAuthenticated) {
+    return <LoginScreen />;
+  }
+
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-slate-950 text-slate-100">
       <TopBar
         onAddPerson={() => setModal({ mode: 'create' })}
         onZoomIn={() => treeRef.current?.zoomIn()}
